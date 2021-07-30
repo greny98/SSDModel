@@ -3,6 +3,12 @@ from libs import *
 
 
 def create_loc(feature_maps, configs):
+    """
+    Predict offset for default boxes from feature maps
+    :param feature_maps:
+    :param configs:
+    :return:
+    """
     locs = []
     for i in range(len(feature_maps)):
         predict = L.Conv2D(
@@ -18,6 +24,12 @@ def create_loc(feature_maps, configs):
 
 
 def create_conf(feature_maps, configs):
+    """
+    Predict confidents for default boxes from feature maps
+    :param feature_maps:
+    :param configs:
+    :return:
+    """
     conf = []
     for i in range(len(feature_maps)):
         predict = L.Conv2D(
@@ -33,6 +45,12 @@ def create_conf(feature_maps, configs):
 
 
 def detector(feature_maps, configs=None):
+    """
+    Combination of predicting offsets and confidents
+    :param feature_maps:
+    :param configs:
+    :return:
+    """
     if configs is None:
         configs = configs
     conf = create_conf(feature_maps, configs)

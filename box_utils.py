@@ -4,11 +4,6 @@ from libs import *
 def convert_coor_to_center(coors):
     """
     Convert (xmin, ymin, xmax, ymax) -> (cx, cy, w, h)
-    :param xmin:
-    :param ymin:
-    :param xmax:
-    :param ymax:
-    :return:
     """
     center = np.zeros_like(coors, dtype=np.float32)
     center[:, 0] = 0.5 * coors[:, 0] + 0.5 * coors[:, 2]  # cx
@@ -21,11 +16,6 @@ def convert_coor_to_center(coors):
 def convert_center_to_coor(center):
     """
     Convert (cx, cy, w, h) -> (xmin, ymin, xmax, ymax)
-    :param cx: center x
-    :param cy: center y
-    :param w: width
-    :param h: height
-    :return:
     """
     coors = np.zeros_like(center, dtype=np.float32)
     coors[:, 0] = center[:, 0] - 0.5 * center[:, 2]  # xmin

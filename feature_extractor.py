@@ -9,6 +9,10 @@ layer_dict = {
 
 
 def feature_extractor():
+    """
+    Create new model for extract features and get output of several layers
+    :return:
+    """
     feature_map_out = vgg16.output  # (10,10,512)
     feature_map_b4 = vgg16.get_layer(layer_dict['block4']).output
     feature_map_b5 = vgg16.get_layer(layer_dict['block5']).output

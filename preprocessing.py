@@ -9,6 +9,12 @@ from box_utils import convert_coor_to_center, matching, create_offset
 def convert_xml_to_dict(xml_path, image_dir=None, label_to_idx=None):
     """
     Read XML file, get info of image and save into dictionary
+        - Read XML file
+        - Get following info:
+            + folder + filename => image path
+            + width, height
+            + xmin, ymin, xmax, ymax => cx, cy, w, h => normalize
+            + label (categorical), name (text)
     :param xml_path:
     :param image_dir:
     :param label_to_idx:
@@ -48,6 +54,14 @@ def convert_xml_to_dict(xml_path, image_dir=None, label_to_idx=None):
 
 
 def preprocessing_image(img_path):
+    """
+    Preprocessing image
+        + Read file => decode jpeg => cast to float
+        + Resize (320, 320)
+        + Normalize: image / 127.5 - 1.
+    :param img_path:
+    :return:
+    """
     raw_img = tf.io.read_file(img_path)
     decoded = tf.image.decode_jpeg(raw_img, channels=3)
     decoded = tf.cast(decoded, dtype=tf.float32)
@@ -57,6 +71,18 @@ def preprocessing_image(img_path):
 
 
 class DataGenerator(tf.keras.utils.Sequence):
+    """
+    Custom DataGenerator
+        - Initialize with
+            + List of info
+            + Batch Size
+            + Default boxes: Used to calc offset from truth boxes
+            and label for each box
+            + Training or not
+        - Get mini-batch: Each selected index, read image => matching to find best truth box for
+        each default box => calc offsets and label for each default box from truth box
+        - Shuffle (indexes) on end epoch
+    """
     def __init__(self, info_dicts, batch_size, dboxes, n_labels=1, is_training=True):
         self.info_dicts = info_dicts
         self.batch_size = batch_size
@@ -104,9 +130,18 @@ class DataGenerator(tf.keras.utils.Sequence):
             np.random.shuffle(self.samples)
 
 
-def create_ds(xml_dir, label_to_idx, n_labels, dboxes, image_dir=None, batch_size=None, is_training=True):
+def create_ds(xml_dir, label_to_idx, n_labels,
+              dboxes, image_dir=None, batch_size=None, is_training=True):
     """
     Create Data generator from XML
+        - Create empty list to store info of images
+        - Read each .xml file in xml_dir
+        - Convert info to dictionary (convert_xml_to_dict)
+        - Append info to list
+        - Create DataGenerator from
+            + info list
+            + batch_size
+            + # of labels (used to one hot label)
     :param xml_dir:
     :param label_to_idx:
     :param image_dir:
