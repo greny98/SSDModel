@@ -1,0 +1,7 @@
+.idea
+data
+venv
+models
+notebooks
+.DS_Store
+__pycache__
