@@ -65,7 +65,7 @@ def ssd(configs):
     return models.Model(inputs, outputs={'conf': conf, 'loc': loc})
 
 
-# @tf.function
+@tf.function
 def training_step_fn(model: models.Model, images,
                      gtruths, alpha=1., batch_size=4,
                      optimizer=tf.keras.optimizers.Adam()):
@@ -85,9 +85,6 @@ def training_step_fn(model: models.Model, images,
         mean_loc_loss = tf.reduce_mean(mean_loc_loss) * alpha
         # Calc confident loss
         conf_loss = tf.keras.losses.categorical_crossentropy(conf, pred_conf)
-        print(conf_loss[0, 0])
-        print(conf[0, 0])
-        print(pred_conf[0, 0])
         pos_idx = tf.where(box_labels > 0)
         neg_idx = tf.where(box_labels <= 0)
         mean_conf_loss = []
@@ -95,7 +92,6 @@ def training_step_fn(model: models.Model, images,
             # Calc positive conf
             pos_batch = pos_idx[pos_idx[:, 0] == i][:, 1]
             pos_loss = tf.gather(conf_loss[i, :], pos_batch)
-            n_pos = pos_loss.get_shape()
             pos_loss = tf.reduce_sum(pos_loss)
             # Calc negative conf (3 * n_pos)
             neg_batch = neg_idx[neg_idx[:, 0] == i][:, 1]
