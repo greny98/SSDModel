@@ -11,17 +11,17 @@ label_to_idx = {
 configs = {
     'default_boxes': 4,
     'aspect_ratios': [1.5, 2.5, 3.5, 4.5],
-    'steps': [40, 20, 10, 5, 2, 1],
+    'steps': [20, 10, 5, 2, 1],
     'n_classes': 1,
     'image_size': 320,
-    'min_scale': 0.15,
+    'min_scale': 0.2,
     'max_scale': 0.8
 }
 
 if __name__ == '__main__':
     dboxes = box_utils.create_default_boxes(configs)
-    epochs = 2
-    batch_size = 4
+    epochs = 100
+    batch_size = 8
     ds = pre.create_ds('data/alpr/annotations', label_to_idx,
                        n_labels=configs['n_classes'],
                        dboxes=dboxes,
@@ -36,7 +36,11 @@ if __name__ == '__main__':
         for images, gtruths in ds:
             losses = ssd.training_step_fn(model, images,
                                           gtruths, batch_size=batch_size)
-            print('conf_loss:', losses[0])
-            print('loc_loss: ', losses[1])
-            print('total_loss:', losses[2])
-
+            mean_conf_losses.append(losses[0])
+            mean_loc_losses.append(losses[1])
+            total_losses.append(losses[2])
+        print(f'Epoch {e + 1}: ')
+        print('- conf_loss:', np.average(mean_conf_losses))
+        print('- loc_loss: ', np.average(mean_loc_losses))
+        print('- total_loss:', np.average(total_losses))
+        print('======================')
