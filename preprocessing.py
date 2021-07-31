@@ -83,6 +83,7 @@ class DataGenerator(tf.keras.utils.Sequence):
         each default box => calc offsets and label for each default box from truth box
         - Shuffle (indexes) on end epoch
     """
+
     def __init__(self, info_dicts, batch_size, dboxes, n_labels=1, is_training=True):
         self.info_dicts = info_dicts
         self.batch_size = batch_size
@@ -104,6 +105,8 @@ class DataGenerator(tf.keras.utils.Sequence):
         images = []
         batch_offsets = []
         batch_conf = []
+        dbox_labels = []
+        filenames = []
         for i in selected:
             info = self.info_dicts[i]
             image = preprocessing_image(info['path'])
@@ -112,18 +115,29 @@ class DataGenerator(tf.keras.utils.Sequence):
             matching_boxes = matching(tf.convert_to_tensor(bboxes), self.dboxes)
             offsets = []
             conf = []
+            dbox_label = []
+            filenames.append(info['path'])
             for i, dbox in enumerate(self.dboxes):
                 idx, iou = matching_boxes[i]
                 offsets.append(create_offset(bboxes[idx], dbox))
                 if iou >= 0.5:
                     conf.append(tf.one_hot(labels[idx], depth=self.n_labels))
+                    dbox_label.append(labels[idx])
                 else:
                     conf.append(tf.one_hot(0, self.n_labels))
+                    dbox_label.append(0)
             batch_offsets.append(offsets)
             batch_conf.append(conf)
             images.append(image)
-        return images, {'loc': tf.convert_to_tensor(batch_offsets),
-                        'conf': tf.convert_to_tensor(batch_conf, dtype=tf.int32)}
+            dbox_label = (np.array(dbox_label) != 0).astype(np.float)
+            dbox_labels.append(dbox_label)
+        return tf.convert_to_tensor(images), \
+               {
+                   'filename': filenames,
+                   'loc': tf.convert_to_tensor(batch_offsets, dtype=tf.float32),
+                   'conf': tf.convert_to_tensor(batch_conf, dtype=tf.float32),
+                   'labels': tf.convert_to_tensor(dbox_labels, dtype=tf.float32)
+               }
 
     def on_epoch_end(self):
         if self.is_training:

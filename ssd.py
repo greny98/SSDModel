@@ -65,6 +65,47 @@ def ssd(configs):
     return models.Model(inputs, outputs={'conf': conf, 'loc': loc})
 
 
-@tf.function
-def training_step_fn(image, gtruth, dboxes):
-    pass
+# @tf.function
+def training_step_fn(model: models.Model, images,
+                     gtruths, alpha=1., batch_size=4,
+                     optimizer=tf.keras.optimizers.Adam()):
+    with tf.GradientTape() as tape:
+        # From ground truths
+        conf = gtruths['conf']
+        loc = gtruths['loc']
+        box_labels = gtruths['labels']
+        # Predictions
+        predicts = model(images)
+        pred_conf = predicts['conf']
+        pred_loc = predicts['loc']
+        # Calc loc loss
+        loc_loss = tf.keras.losses.huber(loc, pred_loc)
+        loc_loss = loc_loss * box_labels
+        mean_loc_loss = tf.reduce_sum(loc_loss, axis=-1, keepdims=True)
+        mean_loc_loss = tf.reduce_mean(mean_loc_loss) * alpha
+        # Calc confident loss
+        conf_loss = tf.keras.losses.categorical_crossentropy(conf, pred_conf)
+        print(conf_loss[0, 0])
+        print(conf[0, 0])
+        print(pred_conf[0, 0])
+        pos_idx = tf.where(box_labels > 0)
+        neg_idx = tf.where(box_labels <= 0)
+        mean_conf_loss = []
+        for i in range(batch_size):
+            # Calc positive conf
+            pos_batch = pos_idx[pos_idx[:, 0] == i][:, 1]
+            pos_loss = tf.gather(conf_loss[i, :], pos_batch)
+            n_pos = pos_loss.get_shape()
+            pos_loss = tf.reduce_sum(pos_loss)
+            # Calc negative conf (3 * n_pos)
+            neg_batch = neg_idx[neg_idx[:, 0] == i][:, 1]
+            neg_loss = tf.gather(conf_loss[i, :], neg_batch)
+            neg_loss = tf.sort(neg_loss, direction='DESCENDING')
+            neg_loss = tf.reduce_sum(neg_loss[:300])
+            total_conf_loss = pos_loss + neg_loss
+            mean_conf_loss.append(total_conf_loss)
+        mean_conf_loss = tf.reduce_mean(mean_conf_loss)
+        total_loss = mean_conf_loss + mean_loc_loss
+        grads = tape.gradient(total_loss, model.trainable_weights)
+        optimizer.apply_gradients(zip(grads, model.trainable_weights))
+        return mean_conf_loss, mean_loc_loss, total_loss
