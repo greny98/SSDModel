@@ -133,7 +133,6 @@ class DataGenerator(tf.keras.utils.Sequence):
             dbox_labels.append(dbox_label)
         return tf.convert_to_tensor(images), \
                {
-                   'filename': filenames,
                    'loc': tf.convert_to_tensor(batch_offsets, dtype=tf.float32),
                    'conf': tf.convert_to_tensor(batch_conf, dtype=tf.float32),
                    'labels': tf.convert_to_tensor(dbox_labels, dtype=tf.float32)

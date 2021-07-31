@@ -13,7 +13,7 @@ def create_loc(feature_maps, configs):
     for i in range(len(feature_maps)):
         predict = L.Conv2D(
             filters=4 * len(configs['aspect_ratios']),
-            kernel_size=3, activation='relu', padding='same',
+            kernel_size=1, activation='relu', padding='same',
             kernel_regularizer=init.HeNormal())(feature_maps[i])
         n_samples, h, w, c = predict.get_shape()
         predict = L.Reshape(target_shape=(h * w * int(c / 4), 4))(predict)
@@ -34,7 +34,7 @@ def create_conf(feature_maps, configs):
     for i in range(len(feature_maps)):
         predict = L.Conv2D(
             filters=(configs['n_classes'] + 1) * configs['default_boxes'],
-            kernel_size=3, activation='relu', padding='same',
+            kernel_size=1, activation='relu', padding='same',
             kernel_regularizer=init.HeNormal())(feature_maps[i])
         n_samples, h, w, c = predict.get_shape()
         predict = L.Reshape(target_shape=(h * w * int(c / 2), 2))(predict)
@@ -65,7 +65,6 @@ def ssd(configs):
     return models.Model(inputs, outputs={'conf': conf, 'loc': loc})
 
 
-@tf.function
 def training_step_fn(model: models.Model, images,
                      gtruths, alpha=1., batch_size=4,
                      optimizer=tf.keras.optimizers.Adam()):
@@ -97,7 +96,7 @@ def training_step_fn(model: models.Model, images,
             neg_batch = neg_idx[neg_idx[:, 0] == i][:, 1]
             neg_loss = tf.gather(conf_loss[i, :], neg_batch)
             neg_loss = tf.sort(neg_loss, direction='DESCENDING')
-            neg_loss = tf.reduce_sum(neg_loss[:300])
+            neg_loss = tf.reduce_sum(neg_loss[:200])
             total_conf_loss = pos_loss + neg_loss
             mean_conf_loss.append(total_conf_loss)
         mean_conf_loss = tf.reduce_mean(mean_conf_loss)

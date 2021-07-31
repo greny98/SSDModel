@@ -14,8 +14,8 @@ def feature_extractor():
     :return:
     """
     feature_map_out = vgg16.output  # (10,10,512)
+    # feature_map_b4 = vgg16.get_layer(layer_dict['block4']).output
     feature_map_b5 = vgg16.get_layer(layer_dict['block5']).output
-    print(feature_map_b5.shape)
     # Extend model
     extend_b1 = L.Conv2D(
         filters=256, kernel_size=3, activation='relu',
@@ -23,7 +23,7 @@ def feature_extractor():
     extend_b1 = L.MaxPool2D()(extend_b1)  # (5,5,256)
     extend_b2 = L.Conv2D(
         filters=256, kernel_size=3, activation='relu',
-        padding='same', kernel_initializer=init.HeUniform())(extend_b1)
+        padding='same', kernel_initializer=init.HeNormal())(extend_b1)
     extend_b2 = L.MaxPool2D()(extend_b2)  # (2,2,256)
     extend_b3 = L.Conv2D(
         filters=256, kernel_size=3, activation='relu',
